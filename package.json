@@ -1,0 +1,8 @@
+{
+  "name": "@lightning-components/lightning",
+  "version": "0.1.0",
+  "description": "Automatically transforms slow html elements into a faster alternative.",
+  "main": "lightning.js",
+  "author": "Justin Fortunato <developer@jfortunato.com>",
+  "license": "MIT"
+}
