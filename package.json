@@ -1,14 +1,14 @@
 {
   "name": "@lightning-components/lightning",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically transforms slow html elements into a faster alternative.",
   "main": "dist/lightning.js",
   "author": "Justin Fortunato <developer@jfortunato.com>",
   "license": "MIT",
   "dependencies": {
-    "@lightning-components/google-maps": "^0.1.1",
-    "@lightning-components/image": "^0.1.4",
-    "@lightning-components/youtube": "^0.1.2"
+    "@lightning-components/google-maps": "^0.1.2",
+    "@lightning-components/image": "^0.1.5",
+    "@lightning-components/youtube": "^0.1.3"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.4"

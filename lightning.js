@@ -43,13 +43,21 @@ import "@lightning-components/google-maps"
         }
 
         connectedCallback() {
+            this._upgradeProperty('disableNativeLazyloading');
+
             const template = document.createElement('template');
 
             let html = this.html;
 
-            html = this.replaceWithLightningComponent(/<iframe(.+youtube\.com\/embed.+)\/iframe>/, 'lightning-youtube', html);
-            html = this.replaceWithLightningComponent(/<iframe(.+google\.com\/maps\/embed.+)\/iframe>/, 'lightning-google-maps', html);
-            html = this.replaceWithLightningComponent(/<img([^>]+)>/, 'lightning-image', html);
+            const options = {};
+
+            if (this.disableNativeLazyloading) {
+                options.disableNativeLazyloading = '';
+            }
+
+            html = this.replaceWithLightningComponent(/<iframe(.+youtube\.com\/embed.+)\/iframe>/, 'lightning-youtube', html, options);
+            html = this.replaceWithLightningComponent(/<iframe(.+google\.com\/maps\/embed.+)\/iframe>/, 'lightning-google-maps', html, options);
+            html = this.replaceWithLightningComponent(/<img([^>]+)>/, 'lightning-image', html, options);
 
             template.innerHTML = html;
             const noscript = template.content.firstChild;
@@ -60,16 +68,50 @@ import "@lightning-components/google-maps"
             return template.content.cloneNode(true);
         }
 
-        replaceWithLightningComponent(regex, componentName, html) {
+        toAttributeName(propertyName) {
+            return propertyName.replace(/([a-z])([A-Z])/g, "$1-$2")
+                .replace(/\s+/g, '-')
+                .toLowerCase();
+        }
+
+        replaceWithLightningComponent(regex, componentName, html, options = {}) {
             let matches;
 
+            let attrs = '';
+
+            for (let option of Object.getOwnPropertyNames(options)) {
+                const value = options[option];
+
+                attrs += ` ${this.toAttributeName(option)}="${value}"`;
+            }
+
             while ((matches = regex.exec(html)) !== null) {
-                const replacement = `<${componentName}${matches[1]}></${componentName}>`;
+                const replacement = `<${componentName}${attrs}${matches[1]}></${componentName}>`;
 
                 html = html.replace(regex, replacement).trim();
             }
 
             return html;
+        }
+
+        _upgradeProperty(prop) {
+            if (this.hasOwnProperty(prop)) {
+                let value = this[prop];
+                delete this[prop];
+                this[prop] = value;
+            }
+        }
+
+        set disableNativeLazyloading(value) {
+            if (!value) {
+                return this.removeAttribute('disable-native-lazyloading');
+            }
+
+            this.setAttribute('disable-native-lazyloading', value);
+        }
+
+        get disableNativeLazyloading() {
+            return this.hasAttribute('disable-native-lazyloading') && this.getAttribute('disable-native-lazyloading') !== 'false';
         }
     }
 
