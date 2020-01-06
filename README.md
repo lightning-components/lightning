@@ -27,7 +27,7 @@ import '@lightning-components/lightning'
 
 ## Usage
 
-Lightning Components require a specific syntax to work properly. All you need to to is add ``` <lightning-components> ``` and ``` <noscript> ``` tags to your already existing html, right after the ```body``` tag.
+Lightning Components require a specific syntax to work properly. All you need to do is add ``` <lightning-components> ``` and ``` <noscript> ``` tags to your already existing html, right after the ```body``` tag.
 
 So if this was the original html on your page:
 ```html
