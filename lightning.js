@@ -1,21 +1,6 @@
-// navigator.serviceWorker.register('/examples/sw.js');
-
-// (function () {
-//     document.querySelectorAll('iframe').forEach(el => {
-//         el.outerHTML = el.outerHTML.replace(/iframe/g, 'lightning-youtube').trim();
-//     });
-//
-//     document.querySelectorAll('img').forEach(el => {
-//         // el.outerHTML = el.outerHTML.replace(/img/g, 'lightning-image').trim();
-//
-//         el.src = 'data:image/gif;base64,R0lGOD lhCwAOAMQfAP////7+/vj4+Hh4eHd3d/v7+/Dw8HV1dfLy8ubm5vX19e3t7fr 6+nl5edra2nZ2dnx8fMHBwYODg/b29np6eujo6JGRkeHh4eTk5LCwsN3d3dfX 13Jycp2dnevr6////yH5BAEAAB8ALAAAAAALAA4AAAVq4NFw1DNAX/o9imAsB tKpxKRd1+YEWUoIiUoiEWEAApIDMLGoRCyWiKThenkwDgeGMiggDLEXQkDoTh CKNLpQDgjeAsY7MHgECgx8YR8oHwNHfwADBACGh4EDA4iGAYAEBAcQIg0DkgcEIQA7';
-//     });
-// })();
-
-
-
-
-
+import "@lightning-components/youtube"
+import "@lightning-components/image"
+import "@lightning-components/google-maps"
 
 (function() {
     /*
@@ -30,8 +15,9 @@
 <style>
 </style>
 
-<div class="lightning-components">
-</div>
+<!-- We want all the elements to live outside of the shadowDOM so that it is fully query-able, style-able, etc as if it wasn't
+ inside the shadowDOM at all. The <slot> element allows us to accomplish this. -->
+<slot></slot>
 
 `;
 
@@ -48,25 +34,31 @@
         constructor() {
             super();
 
-            let html = this.innerHTML;
+            // store all the html for later use and immediately clear it all
+            this.html = this.innerHTML;
             this.innerHTML = '';
 
-            html = html.replace(/<noscript>/g, '').trim();
-            html = html.replace(/<\/noscript>/g, '').trim();
+            this.attachShadow({mode: 'open'});
+            this.shadowRoot.appendChild(this.template());
+        }
+
+        connectedCallback() {
+            const template = document.createElement('template');
+
+            let html = this.html;
 
             html = this.replaceWithLightningComponent(/<iframe(.+youtube\.com\/embed.+)\/iframe>/, 'lightning-youtube', html);
             html = this.replaceWithLightningComponent(/<iframe(.+google\.com\/maps\/embed.+)\/iframe>/, 'lightning-google-maps', html);
             html = this.replaceWithLightningComponent(/<img([^>]+)>/, 'lightning-image', html);
 
-            this.innerHTML = html;
-
-            // this.attachShadow({mode: 'open'});
-            // this.shadowRoot.appendChild(this.template());
+            template.innerHTML = html;
+            const noscript = template.content.firstChild;
+            this.innerHTML = noscript.innerHTML;
         }
 
-        // template() {
-        //     return template.content.cloneNode(true);
-        // }
+        template() {
+            return template.content.cloneNode(true);
+        }
 
         replaceWithLightningComponent(regex, componentName, html) {
             let matches;

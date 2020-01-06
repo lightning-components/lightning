@@ -4,5 +4,17 @@
   "description": "Automatically transforms slow html elements into a faster alternative.",
   "main": "lightning.js",
   "author": "Justin Fortunato <developer@jfortunato.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@lightning-components/google-maps": "^0.1.1",
+    "@lightning-components/image": "^0.1.4",
+    "@lightning-components/youtube": "^0.1.2"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
+  },
+  "scripts": {
+    "dev": "parcel watch lightning.js",
+    "build": "parcel build lightning.js --out-file lightning.min.js"
+  }
 }
