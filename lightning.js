@@ -35,7 +35,7 @@ import "@lightning-components/google-maps"
             super();
 
             // store all the html for later use and immediately clear it all
-            this.html = this.innerHTML;
+            this.html = this.querySelector('template').innerHTML;
             this.innerHTML = '';
 
             this.attachShadow({mode: 'open'});
@@ -44,8 +44,6 @@ import "@lightning-components/google-maps"
 
         connectedCallback() {
             this._upgradeProperty('disableNativeLazyloading');
-
-            const template = document.createElement('template');
 
             let html = this.html;
 
@@ -59,9 +57,7 @@ import "@lightning-components/google-maps"
             html = this.replaceWithLightningComponent(/<iframe(.+google\.com\/maps\/embed.+)\/iframe>/, 'lightning-google-maps', html, options);
             html = this.replaceWithLightningComponent(/<img([^>]+)>/, 'lightning-image', html, options);
 
-            template.innerHTML = html;
-            const noscript = template.content.firstChild;
-            this.innerHTML = noscript.innerHTML;
+            this.innerHTML = html;
         }
 
         template() {
