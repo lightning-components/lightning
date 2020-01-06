@@ -2,7 +2,7 @@
   "name": "@lightning-components/lightning",
   "version": "0.1.0",
   "description": "Automatically transforms slow html elements into a faster alternative.",
-  "main": "lightning.js",
+  "main": "dist/lightning.js",
   "author": "Justin Fortunato <developer@jfortunato.com>",
   "license": "MIT",
   "dependencies": {
@@ -13,8 +13,13 @@
   "devDependencies": {
     "parcel-bundler": "^1.12.4"
   },
+  "files": [
+    "dist/*.{js,map}",
+    "examples/",
+    "lightning.js"
+  ],
   "scripts": {
     "dev": "parcel watch lightning.js",
-    "build": "parcel build lightning.js --out-file lightning.min.js"
+    "build": "parcel build lightning.js --no-minify && parcel build lightning.js --out-file lightning.min.js"
   }
 }
