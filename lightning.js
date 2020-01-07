@@ -2,7 +2,7 @@ import "@lightning-components/youtube"
 import "@lightning-components/image"
 import "@lightning-components/google-maps"
 
-(function() {
+(function(document) {
     /*
      *
      *     Shadow DOM Template
@@ -115,4 +115,20 @@ import "@lightning-components/google-maps"
     }
 
     customElements.define('lightning-components', LightningComponents);
-})();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('template[lightning-components]').forEach(el => {
+            let attrs = '';
+
+            if (el.hasAttribute('lightning-disable-native-lazyloading')) {
+                attrs += ` disable-native-lazyloading`;
+            }
+
+            const container = document.createElement('template');
+            container.innerHTML = `<lightning-components${attrs}><template>${el.innerHTML}</template></lightning-components>`;
+
+            el.parentNode.replaceChild(container.content.firstChild, el);
+        });
+    });
+
+})(document);
