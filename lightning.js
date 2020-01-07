@@ -34,8 +34,12 @@ import "@lightning-components/google-maps"
         constructor() {
             super();
 
+            if (!this.firstElementChild || this.firstElementChild.tagName.toLowerCase() !== 'template') {
+                throw new Error("You must have a template tag as the first child under the lightning-components tag.");
+            }
+
             // store all the html for later use and immediately clear it all
-            this.html = this.querySelector('template').innerHTML;
+            this.fragment = this.querySelector('template').content;
             this.innerHTML = '';
 
             this.attachShadow({mode: 'open'});
@@ -45,19 +49,18 @@ import "@lightning-components/google-maps"
         connectedCallback() {
             this._upgradeProperty('disableNativeLazyloading');
 
-            let html = this.html;
-
             const options = {};
 
             if (this.disableNativeLazyloading) {
                 options.disableNativeLazyloading = '';
             }
 
-            html = this.replaceWithLightningComponent(/<iframe(.+youtube\.com\/embed.+)\/iframe>/, 'lightning-youtube', html, options);
-            html = this.replaceWithLightningComponent(/<iframe(.+google\.com\/maps\/embed.+)\/iframe>/, 'lightning-google-maps', html, options);
-            html = this.replaceWithLightningComponent(/<img([^>]+)>/, 'lightning-image', html, options);
+            this.replaceWithLightningComponent('iframe[src*="youtube.com/embed/"]', 'iframe', 'lightning-youtube', options);
+            this.replaceWithLightningComponent('iframe[src*="google.com/maps/embed"]', 'iframe', 'lightning-google-maps', options);
+            this.replaceWithLightningComponent('img', 'img', 'lightning-image', options);
 
-            this.innerHTML = html;
+            const cloned = document.importNode(this.fragment, true);
+            this.appendChild(cloned);
         }
 
         template() {
@@ -70,24 +73,24 @@ import "@lightning-components/google-maps"
                 .toLowerCase();
         }
 
-        replaceWithLightningComponent(regex, componentName, html, options = {}) {
-            let matches;
+        replaceTag(node, originalTag, lightningTag) {
+            const regex = new RegExp(originalTag, 'g');
 
-            let attrs = '';
+            return node.outerHTML.replace(regex, lightningTag).trim();
+        }
 
-            for (let option of Object.getOwnPropertyNames(options)) {
-                const value = options[option];
+        replaceWithLightningComponent(selector, originalTag, lightningTag, options = {}) {
+            this.fragment.querySelectorAll(selector).forEach(node => {
+                const tpl = document.createElement('template');
+                tpl.innerHTML = this.replaceTag(node, originalTag, lightningTag);
+                const tag = tpl.content.firstChild;
 
-                attrs += ` ${this.toAttributeName(option)}="${value}"`;
-            }
+                for (let option of Object.getOwnPropertyNames(options)) {
+                    tag.setAttribute(this.toAttributeName(option), options[option]);
+                }
 
-            while ((matches = regex.exec(html)) !== null) {
-                const replacement = `<${componentName}${attrs}${matches[1]}></${componentName}>`;
-
-                html = html.replace(regex, replacement).trim();
-            }
-
-            return html;
+                node.parentNode.replaceChild(tag, node);
+            });
         }
 
         _upgradeProperty(prop) {
