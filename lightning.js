@@ -2,133 +2,81 @@ import "@lightning-components/youtube"
 import "@lightning-components/image"
 import "@lightning-components/google-maps"
 
-(function(document) {
-    /*
-     *
-     *     Shadow DOM Template
-     * ---------------------------
-     *
-     */
-    const template = document.createElement('template');
-    template.innerHTML = `
-
-<style>
-</style>
-
-<!-- We want all the elements to live outside of the shadowDOM so that it is fully query-able, style-able, etc as if it wasn't
- inside the shadowDOM at all. The <slot> element allows us to accomplish this. -->
-<slot></slot>
-
-`;
-
-
-
-
-    /**
-     *
-     *     Custom Element
-     * ----------------------
-     *
-     */
-    class LightningComponents extends HTMLElement {
-        constructor() {
-            super();
-
-            if (!this.firstElementChild || this.firstElementChild.tagName.toLowerCase() !== 'template') {
-                throw new Error("You must have a template tag as the first child under the lightning-components tag.");
-            }
-
-            // store all the html for later use and immediately clear it all
-            this.fragment = this.querySelector('template').content;
-            this.innerHTML = '';
-
-            this.attachShadow({mode: 'open'});
-            this.shadowRoot.appendChild(this.template());
+class Lightning {
+    constructor(template, options = {}) {
+        if (!(template instanceof HTMLTemplateElement)) {
+            throw new Error("You must supply an HTMLTemplateElement to LightningComponents.");
         }
 
-        connectedCallback() {
-            this._upgradeProperty('disableNativeLazyloading');
+        this.fragment = template.content;
+        this.options = options;
+    }
 
-            const options = {};
+    renderNode() {
+        this.replaceWithLightningComponent('iframe[src*="youtube.com/embed/"]', 'lightning-youtube');
+        this.replaceWithLightningComponent('iframe[src*="google.com/maps/embed"]', 'lightning-google-maps');
+        this.replaceWithLightningComponent('img', 'lightning-image');
 
-            if (this.disableNativeLazyloading) {
+        return document.importNode(this.fragment, true);
+    }
+
+    replaceTag(node, lightningTag) {
+        const originalTag = node.tagName.toLowerCase();
+
+        const regex = new RegExp(originalTag, 'g');
+
+        return node.outerHTML.replace(regex, lightningTag).trim();
+    }
+
+    replaceWithLightningComponent(selector, originalTag, lightningTag) {
+        this.fragment.querySelectorAll(selector).forEach(node => {
+            const tpl = document.createElement('template');
+            tpl.innerHTML = this.replaceTag(node, originalTag, lightningTag);
+            const tag = tpl.content.firstChild;
+
+            for (let option of Object.getOwnPropertyNames(this.options)) {
+                const attrName = option.replace(/([a-z])([A-Z])/g, "$1-$2").replace(/\s+/g, '-').toLowerCase();
+
+                tag.setAttribute(attrName, this.options[option]);
+            }
+
+            node.parentNode.replaceChild(tag, node);
+        });
+    }
+}
+
+(function(document) {
+
+    /**
+     * Wait until DOMContentLoaded in case the script is included
+     * in the head without a defer attribute.
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+
+        /**
+         * Get any of our supported attributes that are on the template.
+         */
+        function getLightningComponentOptions(template) {
+            let options = {};
+
+            if (template.hasAttribute('disable-native-lazyloading') && template.getAttribute('disable-native-lazyloading') !== 'false') {
                 options.disableNativeLazyloading = '';
             }
 
-            this.replaceWithLightningComponent('iframe[src*="youtube.com/embed/"]', 'iframe', 'lightning-youtube', options);
-            this.replaceWithLightningComponent('iframe[src*="google.com/maps/embed"]', 'iframe', 'lightning-google-maps', options);
-            this.replaceWithLightningComponent('img', 'img', 'lightning-image', options);
+            return options;
+        };
 
-            const cloned = document.importNode(this.fragment, true);
-            this.appendChild(cloned);
-        }
+        /**
+         * Search for the syntax that we expect (a template tag with a lightning-components attribute) and
+         * transform all the html inside the template to use lightning-components versions of the supported elements.
+         */
+        document.querySelectorAll('template[lightning-components]').forEach(template => {
+            const lightning = new Lightning(template, getLightningComponentOptions(template));
 
-        template() {
-            return template.content.cloneNode(true);
-        }
-
-        toAttributeName(propertyName) {
-            return propertyName.replace(/([a-z])([A-Z])/g, "$1-$2")
-                .replace(/\s+/g, '-')
-                .toLowerCase();
-        }
-
-        replaceTag(node, originalTag, lightningTag) {
-            const regex = new RegExp(originalTag, 'g');
-
-            return node.outerHTML.replace(regex, lightningTag).trim();
-        }
-
-        replaceWithLightningComponent(selector, originalTag, lightningTag, options = {}) {
-            this.fragment.querySelectorAll(selector).forEach(node => {
-                const tpl = document.createElement('template');
-                tpl.innerHTML = this.replaceTag(node, originalTag, lightningTag);
-                const tag = tpl.content.firstChild;
-
-                for (let option of Object.getOwnPropertyNames(options)) {
-                    tag.setAttribute(this.toAttributeName(option), options[option]);
-                }
-
-                node.parentNode.replaceChild(tag, node);
-            });
-        }
-
-        _upgradeProperty(prop) {
-            if (this.hasOwnProperty(prop)) {
-                let value = this[prop];
-                delete this[prop];
-                this[prop] = value;
-            }
-        }
-
-        set disableNativeLazyloading(value) {
-            if (!value) {
-                return this.removeAttribute('disable-native-lazyloading');
-            }
-
-            this.setAttribute('disable-native-lazyloading', value);
-        }
-
-        get disableNativeLazyloading() {
-            return this.hasAttribute('disable-native-lazyloading') && this.getAttribute('disable-native-lazyloading') !== 'false';
-        }
-    }
-
-    customElements.define('lightning-components', LightningComponents);
-
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('template[lightning-components]').forEach(el => {
-            let attrs = '';
-
-            if (el.hasAttribute('lightning-disable-native-lazyloading')) {
-                attrs += ` disable-native-lazyloading`;
-            }
-
-            const container = document.createElement('template');
-            container.innerHTML = `<lightning-components${attrs}><template>${el.innerHTML}</template></lightning-components>`;
-
-            el.parentNode.replaceChild(container.content.firstChild, el);
+            // replace the original template element with the lightning-transformed html
+            template.parentNode.replaceChild(lightning.renderNode(), template);
         });
+
     });
 
 })(document);
