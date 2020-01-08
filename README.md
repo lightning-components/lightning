@@ -10,6 +10,7 @@ Improve your websites page speed performance by slow elements with faster altern
 - Lazy load google maps.
 - It's just a vanilla web component, no frameworks to install.
 - Will use the browser's built in native lazy loading if it supports it.
+- Only loads the scripts required for your particular page.
 
 ## Install
 
