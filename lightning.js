@@ -30,7 +30,7 @@ class Lightning {
             promises.push(this.replaceWithLightningComponent(LIGHTNING_COMPONENTS[component].selector, component));
         }
 
-        return Promise.all(promises).then(() => document.importNode(this.fragment, true));
+        return Promise.all(promises).then(() => document.adoptNode(this.fragment));
     }
 
     replaceTag(node, lightningTag) {
@@ -60,10 +60,14 @@ class Lightning {
     replaceWithLightningComponent(selector, component) {
         const foundNodes = this.fragment.querySelectorAll(selector);
 
+        // if we did not find any elements that can be turned into a lightning-component,
+        // then don't do anything
         if (!foundNodes.length) {
             return;
         }
 
+        // we found elements that can be turned into lightning-components, so import the related module
+        // then replace all the nodes with a lightning-component version of them.
         return LIGHTNING_COMPONENTS[component].importer.then(() => this.replaceNodes(foundNodes, component));
     }
 }
