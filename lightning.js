@@ -1,6 +1,17 @@
-import "@lightning-components/youtube"
-import "@lightning-components/image"
-import "@lightning-components/google-maps"
+const LIGHTNING_COMPONENTS = {
+    'lightning-youtube': {
+        selector: 'iframe[src*="youtube.com/embed/"]',
+        importer: import('@lightning-components/youtube'),
+    },
+    'lightning-google-maps': {
+        selector: 'iframe[src*="google.com/maps/embed"]',
+        importer: import('@lightning-components/google-maps'),
+    },
+    'lightning-image': {
+        selector: 'img',
+        importer: import('@lightning-components/image'),
+    },
+}
 
 class Lightning {
     constructor(template, options = {}) {
@@ -13,11 +24,13 @@ class Lightning {
     }
 
     renderNode() {
-        this.replaceWithLightningComponent('iframe[src*="youtube.com/embed/"]', 'lightning-youtube');
-        this.replaceWithLightningComponent('iframe[src*="google.com/maps/embed"]', 'lightning-google-maps');
-        this.replaceWithLightningComponent('img', 'lightning-image');
+        const promises = [];
 
-        return document.importNode(this.fragment, true);
+        for (let component of Object.getOwnPropertyNames(LIGHTNING_COMPONENTS)) {
+            promises.push(this.replaceWithLightningComponent(LIGHTNING_COMPONENTS[component].selector, component));
+        }
+
+        return Promise.all(promises).then(() => document.importNode(this.fragment, true));
     }
 
     replaceTag(node, lightningTag) {
@@ -28,10 +41,10 @@ class Lightning {
         return node.outerHTML.replace(regex, lightningTag).trim();
     }
 
-    replaceWithLightningComponent(selector, originalTag, lightningTag) {
-        this.fragment.querySelectorAll(selector).forEach(node => {
+    replaceNodes(nodes, lightningTag) {
+        nodes.forEach(node => {
             const tpl = document.createElement('template');
-            tpl.innerHTML = this.replaceTag(node, originalTag, lightningTag);
+            tpl.innerHTML = this.replaceTag(node, lightningTag);
             const tag = tpl.content.firstChild;
 
             for (let option of Object.getOwnPropertyNames(this.options)) {
@@ -42,6 +55,16 @@ class Lightning {
 
             node.parentNode.replaceChild(tag, node);
         });
+    }
+
+    replaceWithLightningComponent(selector, component) {
+        const foundNodes = this.fragment.querySelectorAll(selector);
+
+        if (!foundNodes.length) {
+            return;
+        }
+
+        return LIGHTNING_COMPONENTS[component].importer.then(() => this.replaceNodes(foundNodes, component));
     }
 }
 
@@ -73,8 +96,11 @@ class Lightning {
         document.querySelectorAll('template[lightning-components]').forEach(template => {
             const lightning = new Lightning(template, getLightningComponentOptions(template));
 
-            // replace the original template element with the lightning-transformed html
-            template.parentNode.replaceChild(lightning.renderNode(), template);
+            lightning.renderNode().then(node => {
+                // replace the original template element with the lightning-transformed html
+                template.parentNode.replaceChild(node, template);
+            });
+
         });
 
     });
