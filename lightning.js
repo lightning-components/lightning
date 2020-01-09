@@ -24,13 +24,27 @@ class Lightning {
     }
 
     renderNode() {
-        const promises = [];
+        const alreadyImported = [];
 
-        for (let component of Object.getOwnPropertyNames(LIGHTNING_COMPONENTS)) {
-            promises.push(this.replaceWithLightningComponent(LIGHTNING_COMPONENTS[component].selector, component));
+        for (let i = 0; i < this.fragment.children.length; i++) {
+            let child = this.fragment.children[i];
+
+            // if the current child is able to be transformed into a lightning-component then do so,
+            // otherwise just move on
+            let component = this.getMatchedLightningComponent(child);
+            if (component) {
+                // import the module if it has not already been imported
+                if (!alreadyImported.includes(component)) {
+                    LIGHTNING_COMPONENTS[component].importer.then(() => Promise.resolve());
+                    alreadyImported.push(component);
+                }
+
+                // in the fragment, replace the original tag with the lightning tag
+                this.replaceNodes([child], component);
+            }
         }
 
-        return Promise.all(promises).then(() => document.adoptNode(this.fragment));
+        return document.adoptNode(this.fragment);
     }
 
     replaceTag(node, lightningTag) {
@@ -57,18 +71,14 @@ class Lightning {
         });
     }
 
-    replaceWithLightningComponent(selector, component) {
-        const foundNodes = this.fragment.querySelectorAll(selector);
-
-        // if we did not find any elements that can be turned into a lightning-component,
-        // then don't do anything
-        if (!foundNodes.length) {
-            return;
+    getMatchedLightningComponent(node) {
+        for (let component of Object.getOwnPropertyNames(LIGHTNING_COMPONENTS)) {
+            if (node.matches(LIGHTNING_COMPONENTS[component].selector)) {
+                return component;
+            }
         }
 
-        // we found elements that can be turned into lightning-components, so import the related module
-        // then replace all the nodes with a lightning-component version of them.
-        return LIGHTNING_COMPONENTS[component].importer.then(() => this.replaceNodes(foundNodes, component));
+        return null;
     }
 }
 
@@ -100,10 +110,10 @@ class Lightning {
         document.querySelectorAll('template[lightning-components]').forEach(template => {
             const lightning = new Lightning(template, getLightningComponentOptions(template));
 
-            lightning.renderNode().then(node => {
-                // replace the original template element with the lightning-transformed html
-                template.parentNode.replaceChild(node, template);
-            });
+            const node = lightning.renderNode();
+
+            // replace the original template element with the lightning-transformed html
+            template.parentNode.replaceChild(node, template);
 
         });
 
